@@ -152,7 +152,7 @@ static inline double mp_radians (double degrees) {return degrees * M_PI/180;}
 	CGFloat scale = [[UIScreen mainScreen] scale];
 	
 	// we inset the panels 1 point on each side with a transparent margin to antialiase the edges
-	UIEdgeInsets insets = vertical? UIEdgeInsetsMake(0, 1, 0, 1) : UIEdgeInsetsMake(1, 0, 1, 0);
+    UIEdgeInsets insets = vertical? UIEdgeInsetsMake(0, 1, 0, 1) : UIEdgeInsetsMake(1, 0, 1, 0);
 	
 	CGRect upperRect = bounds;
 	if (vertical)
@@ -320,9 +320,9 @@ static inline double mp_radians (double degrees) {return degrees * M_PI/180;}
 	
 	self.revealLayerMask = [CAShapeLayer layer];
 	CGRect maskRect = (forwards == isDestinationViewAbove)? destLowerRect : destUpperRect;
-	self.revealLayerMask.path = [[UIBezierPath bezierPathWithRect:maskRect] CGPath];
+    self.revealLayerMask.path = [[UIBezierPath bezierPathWithRect:maskRect] CGPath];
 	UIView *viewToMask = isDestinationViewAbove? self.destinationView : self.sourceView;
-	[viewToMask.layer setMask:self.revealLayerMask];
+    [viewToMask.layer setMask:self.revealLayerMask];
 	
 	self.layerFront = [CALayer layer];
 	self.layerFront.frame = (CGRect){CGPointZero, pageFrontImage.size};
@@ -336,7 +336,7 @@ static inline double mp_radians (double degrees) {return degrees * M_PI/180;}
 	self.layerBack.anchorPoint = CGPointMake(vertical? 0.5 : forwards? 1 : 0, vertical? forwards? 1 : 0 : 0.5);
 	self.layerBack.position = CGPointMake(vertical? width/2 : upperHeight, vertical? upperHeight : width/2);
 	[self.layerBack setContents:(id)[pageBackImage CGImage]];
-	
+    
 	// Create shadow layers
 	self.layerFrontShadow = [CAGradientLayer layer];
 	[self.layerFront addSublayer:self.layerFrontShadow];
@@ -349,6 +349,8 @@ static inline double mp_radians (double degrees) {return degrees * M_PI/180;}
 	self.layerFrontShadow.startPoint = CGPointMake(vertical? 0.5 : forwards? 0 : 0.5, vertical? forwards? 0 : 0.5 : 0.5);
 	self.layerFrontShadow.endPoint = CGPointMake(vertical? 0.5 : forwards? 0.5 : 1, vertical? forwards? 0.5 : 1 : 0.5);
 	self.layerFrontShadow.locations = [NSArray arrayWithObjects:[NSNumber numberWithDouble:0], [NSNumber numberWithDouble:forwards? 0.1 : 0.9], [NSNumber numberWithDouble:1], nil];
+    
+    [self setupMaskOnLayer:self.layerFrontShadow withImage:pageFrontImage];
 	
 	self.layerBackShadow = [CAGradientLayer layer];
 	[self.layerBack addSublayer:self.layerBackShadow];
@@ -361,20 +363,26 @@ static inline double mp_radians (double degrees) {return degrees * M_PI/180;}
 	self.layerBackShadow.startPoint = CGPointMake(vertical? 0.5 : forwards? 0.5 : 0, vertical? forwards? 0.5 : 0 : 0.5);
 	self.layerBackShadow.endPoint = CGPointMake(vertical? 0.5 : forwards? 1 : 0.5, vertical? forwards? 1 : 0.5 : 0.5);
 	self.layerBackShadow.locations = [NSArray arrayWithObjects:[NSNumber numberWithDouble:0], [NSNumber numberWithDouble:forwards? 0.9 : 0.1], [NSNumber numberWithDouble:1], nil];
-	
+    
+    [self setupMaskOnLayer:self.layerBackShadow withImage:pageBackImage];
+
 	if (!inward)
 	{
 		self.layerRevealShadow = [CALayer layer];
 		[self.layerReveal addSublayer:self.layerRevealShadow];
 		self.layerRevealShadow.frame = self.layerReveal.bounds;
-		self.layerRevealShadow.backgroundColor = [self flipShadowColor].CGColor;
-		self.layerRevealShadow.opacity = [self coveredPageShadowOpacity];
-		
+        self.layerRevealShadow.backgroundColor = [self flipShadowColor].CGColor;
+        self.layerRevealShadow.opacity = [self coveredPageShadowOpacity];
+        
+        [self setupMaskOnLayer:self.layerRevealShadow withImage:pageFrontImage];
+
 		self.layerFacingShadow = [CALayer layer];
 		//[self.layerFacing addSublayer:self.layerFacingShadow]; // add later
 		self.layerFacingShadow.frame = self.layerFacing.bounds;
-		self.layerFacingShadow.backgroundColor = [self flipShadowColor].CGColor;
+        self.layerFacingShadow.backgroundColor = [self flipShadowColor].CGColor;
 		self.layerFacingShadow.opacity = 0.0;
+        
+        [self setupMaskOnLayer:self.layerFacingShadow withImage:pageBackImage];
 	}
 	
 	// Perspective is best proportional to the height of the pieces being folded away, rather than a fixed value
@@ -416,6 +424,14 @@ static inline double mp_radians (double degrees) {return degrees * M_PI/180;}
 	self.revealLayerMask = nil;
 	
 	[self setLayersBuilt:NO];
+}
+
+- (void)setupMaskOnLayer:(CALayer *)layer withImage:(UIImage *)image
+{
+    CALayer *maskLayer = [CALayer layer];
+    maskLayer.frame = layer.bounds;
+    maskLayer.contents = (id)image.CGImage;
+    layer.mask = maskLayer;
 }
 
 - (void)perform:(void (^)(BOOL finished))completion
